@@ -1,0 +1,7 @@
+package com.example;
+
+public enum Attribute {
+	
+	CASE_ID, PROCESS_INSTANCE_ID, ASSIGNEE, ASSIGNEE_GROUP, OWNER, OWNER_GROUP, BUSINESS_KEY
+
+}

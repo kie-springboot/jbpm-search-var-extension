@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
@@ -35,46 +36,12 @@ public class VariablesQuery {
 	private static final Logger logger = LoggerFactory.getLogger(VariablesQuery.class);
 
 	private EntityManagerFactory emf;
-	private static final String SELECT_PROCESSID_TASKID_VAR = "SELECT taskid,processinstanceid FROM ( SELECT T.taskId,t.processinstanceid ";
-
-	private static final String FROM_PROCESSVARLOG = " FROM VARIABLEINSTANCELOG V "
-			+ "	LEFT JOIN VARIABLEINSTANCELOG  V2 ON ( V.VARIABLEINSTANCEID = V2.VARIABLEINSTANCEID  AND V.PROCESSINSTANCEID=V2.PROCESSINSTANCEID AND V.ID < V2.ID )"
-			+ "	INNER JOIN AUDITTASKIMPL  T ON T.PROCESSINSTANCEID = V.PROCESSINSTANCEID"
-			+ "	WHERE V2.ID IS NULL GROUP BY T.TASKID,t.processinstanceid ) resultAlias ";
-
-	private static final String FROM_TASKVARLOG = "  FROM TASKVARIABLEIMPL V  "
-			+ " LEFT JOIN TASKVARIABLEIMPL  V2 ON ( V.NAME = V2.NAME AND V.TASKID=V2.TASKID AND V.ID < V2.ID )	"
-			+ " INNER JOIN AUDITTASKIMPL  T ON T.PROCESSINSTANCEID = V.PROCESSINSTANCEID	 "
-			+ " WHERE V2.ID IS NULL GROUP BY T.TASKID,t.processinstanceid ) resultAlias ";
-
-	private static final String PROCESS_VAR_MAX = ", MAX ( CASE V.VARIABLEINSTANCEID WHEN '%s' THEN V.VALUE END )  VAR_%s";
-	private static final String TASK_VAR_MAX = ", MAX ( CASE V.name WHEN '%s' THEN V.VALUE END )  VAR_%s";
-
-	private static final String WHERE = "WHERE ";
-	private static final String AND = " AND ";
-	private static final String VAR_PREFIX = "VAR_";
-
-	private static final String TASK_VAR_PREFIX = "t_";
-	private static final String PROCESS_VAR_PREFIX = "p_";
-	private static final String COMMA = ",";
-	private static final String TASK_TYPE = "task";
-	private static final String PROCESS_TYPE = "process";
-
-	private static final String SELECT_PROCESS_VARS = "select " + " v.processinstanceid," + " v.value,"
-			+ " v.variableid from variableinstancelog v " + " inner join ( " + " select  max(v.id) myId "
-			+ "from variableinstancelog v where v.processinstanceid in ( ";
-	private static final String END_PROCESS_VARS = ") group by v.processinstanceid,v.variableid ) resultAlias on v.id = resultAlias.myId";
-
-	private static final String SELECT_TASK_VARS = " select t.taskid,t.value,t.name from taskvariableimpl t "
-			+ "	inner join ( " + "			select max(tv.id) myId from taskvariableimpl tv  "
-			+ "			where tv.taskid in ( ";
-	private static final String END_TASK_VARS = " ) " + "	group by tv.taskid,tv.name "
-			+ "	) resultAlias on t.id = resultAlias.myId ";
 
 	private Map<String, Object> searchTaskVars = new HashMap<String, Object>();
 	private Map<String, Object> searchProcessVars = new HashMap<String, Object>();
 	private Map<Long, List<Variable>> taskVariables = new HashMap<Long, List<Variable>>();
 	private Map<Long, List<Variable>> processVariables = new HashMap<Long, List<Variable>>();
+	private Map<Attribute, Object> attributes = new HashMap<Attribute, Object>();
 
 	public VariablesQuery(EntityManagerFactory emf) {
 		this.emf = emf;
@@ -86,10 +53,7 @@ public class VariablesQuery {
 	@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
 	public Response tasksVariables(@Context HttpHeaders headers, SearchPayload payload) {
 
-		searchTaskVars.clear();
-		searchProcessVars.clear();
-		taskVariables.clear();
-		processVariables.clear();
+		clear();
 
 		logger.info("VariablesQuery.tasksVariables()");
 		Variant v = getVariant(headers);
@@ -104,23 +68,25 @@ public class VariablesQuery {
 
 			logger.info("Received following search criterias");
 			payload.getSearchCriteria().keySet().forEach(k -> {
-
 				logger.info("{} = {}", k, payload.getSearchCriteria().get(k));
 			});
 			logger.info("appendProcessVars {}", payload.getAppendProcessVars());
 
-			searchTaskVars = filterByPrefix(payload, TASK_VAR_PREFIX);
+			searchTaskVars = filterByPrefix(payload, SQLConstants.TASK_VAR_PREFIX);
 
 			searchTaskVars.keySet().forEach(k -> {
-
 				logger.info("task var name {}, task var value {}", k, searchTaskVars.get(k));
 			});
 
-			searchProcessVars = filterByPrefix(payload, PROCESS_VAR_PREFIX);
+			searchProcessVars = filterByPrefix(payload, SQLConstants.PROCESS_VAR_PREFIX);
 
 			searchProcessVars.keySet().forEach(k -> {
-
 				logger.info("process var name {}, task var value {}", k, searchProcessVars.get(k));
+			});
+
+			attributes = filterByAttribute(payload);
+			attributes.keySet().forEach(t -> {
+				logger.info("attribute  name {}, attribute value {}", t, attributes.get(t));
 			});
 
 			List<IDWrapper> tasksByProcessVars = filterByProcessVars(searchProcessVars);
@@ -128,9 +94,8 @@ public class VariablesQuery {
 			List<IDWrapper> tasksByTasksVar = filterByTasksVars(searchTaskVars);
 			tasksByProcessVars.forEach(t -> logger.info("filtered by tVar {} ", t));
 
-			Set<IDWrapper> intersect = new HashSet<IDWrapper>();
-			intersect.addAll(tasksByProcessVars);
-			intersect.addAll(tasksByTasksVar);
+			Set<IDWrapper> intersect = intersect(tasksByProcessVars, tasksByTasksVar);
+
 			intersect.forEach(t -> logger.info("intersect {} ", t));
 
 			taskVariables = fetchTaskVariables(intersect);
@@ -157,6 +122,28 @@ public class VariablesQuery {
 		}
 	}
 
+	private Set<IDWrapper> intersect(List<IDWrapper> list, List<IDWrapper> otherlist) {
+		return list.stream().distinct().filter(otherlist::contains).collect(Collectors.toSet());
+	}
+
+	private Map<Attribute, Object> filterByAttribute(SearchPayload payload) {
+
+		return payload.getSearchCriteria().keySet().stream()
+				.filter(k -> !k.toLowerCase().startsWith(SQLConstants.TASK_VAR_PREFIX)
+						&& !k.toLowerCase().startsWith(SQLConstants.PROCESS_VAR_PREFIX))
+				.collect(Collectors.toMap(k -> Attribute.valueOf(k.toUpperCase()),
+						k -> payload.getSearchCriteria().get(k)));
+
+	}
+
+	private void clear() {
+		searchTaskVars.clear();
+		searchProcessVars.clear();
+		taskVariables.clear();
+		processVariables.clear();
+		attributes.clear();
+	}
+
 	private Map<Long, List<Variable>> fetchProcessVariables(Set<IDWrapper> intersect) {
 		Set<Long> pids = new HashSet<Long>();
 		intersect.forEach(id -> pids.add(id.getProcessinstanceid()));
@@ -179,12 +166,13 @@ public class VariablesQuery {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	private List<Variable> executeTaskVariablesSQL(Set<Long> tids) {
 		String sql = buildGetTaskVarsQuery(tids);
 		EntityManager em = emf.createEntityManager();
 		Query query = em.createNativeQuery(sql);
 		List<Object[]> sqlResult = query.getResultList();
-		List<Variable> pojoResult = transformToVariable(sqlResult, TASK_TYPE);
+		List<Variable> pojoResult = transformToVariable(sqlResult, SQLConstants.TASK_TYPE);
 		em.close();
 
 		return pojoResult;
@@ -192,16 +180,16 @@ public class VariablesQuery {
 
 	private String buildGetTaskVarsQuery(Set<Long> tids) {
 		String sql = "";
-		sql += SELECT_TASK_VARS;
+		sql += SQLConstants.SELECT_TASK_VARS;
 
 		String idList = "";
 		for (Long id : tids) {
 			idList += id + " , ";
 		}
 
-		idList = removeLastOccurence(idList, COMMA);
+		idList = removeLastOccurence(idList, SQLConstants.COMMA);
 		sql += idList;
-		sql += END_TASK_VARS;
+		sql += SQLConstants.END_TASK_VARS;
 
 		return sql;
 	}
@@ -233,13 +221,14 @@ public class VariablesQuery {
 		return task;
 	}
 
+	@SuppressWarnings("unchecked")
 	private List<Variable> executeProcessVariablesSQL(Set<Long> pids) {
 		String sql = buildGetProcessVarsQuery(pids);
 		logger.info("final sql \n {}", sql);
 		EntityManager em = emf.createEntityManager();
 		Query query = em.createNativeQuery(sql);
 		List<Object[]> sqlResult = query.getResultList();
-		List<Variable> pojoResult = transformToVariable(sqlResult, PROCESS_TYPE);
+		List<Variable> pojoResult = transformToVariable(sqlResult, SQLConstants.PROCESS_TYPE);
 		em.close();
 
 		return pojoResult;
@@ -259,22 +248,22 @@ public class VariablesQuery {
 
 	private String buildGetProcessVarsQuery(Set<Long> pids) {
 		String sql = "";
-		sql += SELECT_PROCESS_VARS;
+		sql += SQLConstants.SELECT_PROCESS_VARS;
 
 		String idList = "";
 		for (Long id : pids) {
 			idList += id + " , ";
 		}
 
-		idList = removeLastOccurence(idList, COMMA);
+		idList = removeLastOccurence(idList, SQLConstants.COMMA);
 		sql += idList;
-		sql += END_PROCESS_VARS;
+		sql += SQLConstants.END_PROCESS_VARS;
 
 		return sql;
 	}
 
+	@SuppressWarnings("unchecked")
 	private List<IDWrapper> filterByTasksVars(Map<String, Object> taskVars) {
-		// TODO Auto-generated method stub
 
 		String sql = buildSearchByTaskVarQuery(taskVars);
 		logger.info("final sql \n {}", sql);
@@ -290,6 +279,7 @@ public class VariablesQuery {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	private List<IDWrapper> filterByProcessVars(Map<String, Object> processVars) {
 
 		String sql = buildSearchByProcessVarQuery(processVars);
@@ -309,17 +299,21 @@ public class VariablesQuery {
 		String variableColumns = "";
 		String whereClause = "";
 		for (String var : processVars.keySet()) {
-			variableColumns += String.format(PROCESS_VAR_MAX, var.substring(PROCESS_VAR_PREFIX.length()),
-					var.substring(PROCESS_VAR_PREFIX.length()));
-			whereClause += VAR_PREFIX + var.substring(PROCESS_VAR_PREFIX.length()) + " = " + "'"
-					+ processVars.get(var).toString() + "' " + AND;
+			variableColumns += String.format(SQLConstants.PROCESS_VAR_MAX,
+					var.substring(SQLConstants.PROCESS_VAR_PREFIX.length()),
+					var.substring(SQLConstants.PROCESS_VAR_PREFIX.length()));
+			whereClause += SQLConstants.VAR_PREFIX + var.substring(SQLConstants.PROCESS_VAR_PREFIX.length()) + " = "
+					+ "'" + processVars.get(var).toString() + "' " + SQLConstants.AND;
 		}
+		
+		whereClause += applyProcessAttributes(attributes);
 
 		String sql = "";
-		sql += SELECT_PROCESSID_TASKID_VAR + variableColumns + FROM_PROCESSVARLOG;
-		whereClause = removeLastOccurence(whereClause, AND);
+		sql += SQLConstants.SELECT_PROCESSID_TASKID_CORRELATIONKEY_VAR + variableColumns
+				+ SQLConstants.FROM_PROCESSVARLOG;
+		whereClause = removeLastOccurence(whereClause, SQLConstants.AND);
 
-		sql += WHERE + " " + whereClause;
+		sql += SQLConstants.WHERE + " " + whereClause;
 
 		return sql;
 	}
@@ -328,18 +322,65 @@ public class VariablesQuery {
 		String variableColumns = "";
 		String whereClause = "";
 		for (String var : taskVars.keySet()) {
-			variableColumns += String.format(TASK_VAR_MAX, var.substring(TASK_VAR_PREFIX.length()),
-					var.substring(TASK_VAR_PREFIX.length()));
-			whereClause += VAR_PREFIX + var.substring(TASK_VAR_PREFIX.length()) + " = " + "'"
-					+ taskVars.get(var).toString() + "' " + AND;
+			variableColumns += String.format(SQLConstants.TASK_VAR_MAX,
+					var.substring(SQLConstants.TASK_VAR_PREFIX.length()),
+					var.substring(SQLConstants.TASK_VAR_PREFIX.length()));
+			whereClause += SQLConstants.VAR_PREFIX + var.substring(SQLConstants.TASK_VAR_PREFIX.length()) + " = " + "'"
+					+ taskVars.get(var).toString() + "' " + SQLConstants.AND;
 		}
 
+
 		String sql = "";
-		sql += SELECT_PROCESSID_TASKID_VAR + variableColumns + FROM_TASKVARLOG;
-		whereClause = removeLastOccurence(whereClause, AND);
-		sql += WHERE + " " + whereClause;
+		sql += SQLConstants.SELECT_PROCESSID_TASKID_VAR + variableColumns + SQLConstants.FROM_TASKVARLOG;
+		whereClause = removeLastOccurence(whereClause, SQLConstants.AND);
+		sql += SQLConstants.WHERE + " " + whereClause;
 
 		return sql;
+	}
+
+	private String applyProcessAttributes(Map<Attribute, Object> attributes) {
+		AtomicReference<String> sql = new AtomicReference<String>();
+		//@formatter:off
+
+		attributes.keySet().forEach(a -> {
+
+			switch (a) {
+
+			case BUSINESS_KEY: {
+
+				String local = sql.get() != null ? sql.get() : "";
+				String tmp = SQLConstants.CORRELATION_KEY_NAME 
+						+ SQLConstants.EQUAL_TO
+						+ SQLConstants.SINGLE_QUOTE
+						+ attributes.get(Attribute.BUSINESS_KEY)
+						+ SQLConstants.SINGLE_QUOTE
+						+ SQLConstants.AND;
+				sql.set(local + "\n" + tmp);
+				
+				break;
+			}
+			
+			case PROCESS_INSTANCE_ID: {
+				String local = sql.get() != null ? sql.get() : "";
+				String tmp = SQLConstants.PROCESS_INSTANCE_ID 
+						+ SQLConstants.EQUAL_TO
+						+ Long.valueOf(attributes.get(Attribute.PROCESS_INSTANCE_ID).toString())
+						+ SQLConstants.AND;
+				sql.set(local + "\n" + tmp);
+				break;
+				
+			}
+			
+			default: break;
+
+			}
+
+		});
+		
+		//@formatter:on
+
+		return sql.get();
+
 	}
 
 	private String removeLastOccurence(String source, String toRemove) {
