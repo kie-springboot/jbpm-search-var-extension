@@ -99,6 +99,7 @@ public class VariablesQuery {
 		if (format == null) {
 			format = MarshallingFormat.valueOf(contentType);
 		}
+
 		try {
 
 			logger.info("Received following search criterias");
@@ -159,21 +160,27 @@ public class VariablesQuery {
 	private Map<Long, List<Variable>> fetchProcessVariables(Set<IDWrapper> intersect) {
 		Set<Long> pids = new HashSet<Long>();
 		intersect.forEach(id -> pids.add(id.getProcessinstanceid()));
-		List<Variable> variables = executeProcessVariablesSQL(pids);
+
+		List<Variable> variables = new ArrayList<Variable>();
+		if (!pids.isEmpty()) {
+			variables = executeProcessVariablesSQL(pids);
+		}
 		return variables.stream().collect(Collectors.groupingBy(Variable::getParentId));
 	}
 
 	private Map<Long, List<Variable>> fetchTaskVariables(Set<IDWrapper> intersect) {
 		Set<Long> tids = new HashSet<Long>();
 		intersect.forEach(id -> tids.add(id.getProcessinstanceid()));
-		List<Variable> variables = executeTaskVariablesSQL(tids);
+		List<Variable> variables = new ArrayList<Variable>();
+		if (!tids.isEmpty()) {
+			variables = executeTaskVariablesSQL(tids);
+		}
 		return variables.stream().collect(Collectors.groupingBy(Variable::getParentId));
 
 	}
 
 	private List<Variable> executeTaskVariablesSQL(Set<Long> tids) {
 		String sql = buildGetTaskVarsQuery(tids);
-		logger.info("final sql \n {}", sql);
 		EntityManager em = emf.createEntityManager();
 		Query query = em.createNativeQuery(sql);
 		List<Object[]> sqlResult = query.getResultList();
@@ -308,12 +315,9 @@ public class VariablesQuery {
 					+ processVars.get(var).toString() + "' " + AND;
 		}
 
-		logger.info("where clause before remove {} ", whereClause);
-
 		String sql = "";
 		sql += SELECT_PROCESSID_TASKID_VAR + variableColumns + FROM_PROCESSVARLOG;
 		whereClause = removeLastOccurence(whereClause, AND);
-		logger.info("where clause after remove {} ", whereClause);
 
 		sql += WHERE + " " + whereClause;
 
@@ -326,7 +330,7 @@ public class VariablesQuery {
 		for (String var : taskVars.keySet()) {
 			variableColumns += String.format(TASK_VAR_MAX, var.substring(TASK_VAR_PREFIX.length()),
 					var.substring(TASK_VAR_PREFIX.length()));
-			whereClause+= VAR_PREFIX + var.substring(TASK_VAR_PREFIX.length()) + " = " + "'"
+			whereClause += VAR_PREFIX + var.substring(TASK_VAR_PREFIX.length()) + " = " + "'"
 					+ taskVars.get(var).toString() + "' " + AND;
 		}
 
