@@ -536,6 +536,21 @@ public class VariablesQuery {
 
 				break;
 			}
+			
+			case TASK_NAME: {
+				
+				String local = sql.get() != null ? sql.get() : "";
+				String tmp = SQLConstants.TASK_NAME
+						+ SQLConstants.EQUAL_TO
+						+ SQLConstants.SINGLE_QUOTE
+						+ attributes.get(Attribute.TASK_NAME)
+						+ SQLConstants.SINGLE_QUOTE
+						+ SQLConstants.AND;
+				sql.set(local + "\n" + tmp);
+
+				break;
+				
+			}
 
 			default:
 				break;

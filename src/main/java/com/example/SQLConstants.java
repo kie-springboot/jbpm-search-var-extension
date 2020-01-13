@@ -47,13 +47,14 @@ public class SQLConstants {
 	public static final String COMMA = ",";
 	public static final String TASK_TYPE = "task";
 	public static final String PROCESS_TYPE = "process";
+	public static final String TASK_NAME = "TASKNAME";
 
 	public static final String SELECT_PROCESS_VARS = "select " + " v.processinstanceid," + " v.value,"
 			+ " v.variableid from variableinstancelog v " + " inner join ( " + " select  max(v.id) myId "
 			+ "from variableinstancelog v where v.processinstanceid in ( ";
 	public static final String END_PROCESS_VARS = ") group by v.processinstanceid,v.variableid ) resultAlias on v.id = resultAlias.myId";
 
-	public static final String SELECT_TASK_VARS = " select t.taskid,t.value,t.name,task.ACTUALOWNER_ID,pi.PROCESSID,ck.name ckname from taskvariableimpl t "
+	public static final String SELECT_TASK_VARS = " select t.taskid,t.value,t.name,task.ACTUALOWNER_ID,pi.PROCESSID,ck.name ckname,task.NAME taskname from taskvariableimpl t "
 			+ "	inner join ( " + "			select max(tv.id) myId from taskvariableimpl tv  "
 			+ "			where tv.taskid in ( ";
 	public static final String END_TASK_VARS = " ) " + "	group by tv.taskid,tv.name "

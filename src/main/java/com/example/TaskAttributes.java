@@ -11,7 +11,7 @@ public class TaskAttributes {
 	public TaskAttributes(Object[] sql) {
 		this.taskId = Long.valueOf(sql[0].toString());
 		this.actualOwner = sql[3] == null ? null : sql[3].toString();
-		this.name = sql[2].toString();
+		this.name = sql[6].toString();
 		this.processId = sql[4].toString();
 		this.correlationKeyName = sql[5] == null ? null : sql[5].toString();
 	}
