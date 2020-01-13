@@ -26,6 +26,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
 
+import org.kie.server.api.marshalling.Marshaller;
+import org.kie.server.api.marshalling.MarshallerFactory;
 import org.kie.server.api.marshalling.MarshallingFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,9 +46,15 @@ public class VariablesQuery {
 	private Map<Attribute, Object> attributesCriterias = new HashMap<Attribute, Object>();
 	private Map<Long, TaskAttributes> taskAttributes = new HashMap<Long, TaskAttributes>();
 
+	private Marshaller marshaller;
 
 	public VariablesQuery(EntityManagerFactory emf) {
 		this.emf = emf;
+
+		Set<Class<?>> classes = new HashSet<Class<?>>();
+		classes.add(BPMTask.class);
+		this.marshaller = MarshallerFactory.getMarshaller(classes, MarshallingFormat.JSON,
+				VariablesQuery.class.getClassLoader());
 	}
 
 	@POST
@@ -112,8 +120,9 @@ public class VariablesQuery {
 			}
 
 			List<BPMTask> result = generateResult(intersect);
+			String marshall = this.marshaller.marshall(result);
 
-			return createResponse(result, v, Response.Status.OK);
+			return createResponse(marshall, v, Response.Status.OK);
 		} catch (Exception e) {
 			// in case marshalling failed return the call container response to
 			// keep backward compatibility
@@ -223,7 +232,6 @@ public class VariablesQuery {
 		}
 		task.setOwner(taskAttributes.get(id.getTaskid()).getOwner());
 		task.setName(taskAttributes.get(id.getTaskid()).getName());
-		
 
 		return task;
 	}
@@ -289,13 +297,13 @@ public class VariablesQuery {
 
 	private void extractTaskAttributes(List<Object[]> sqlResult) {
 		// TODO Auto-generated method stub
-		
+
 		sqlResult.forEach(sql -> {
-			
+
 			TaskAttributes attribute = new TaskAttributes(sql);
 			taskAttributes.put(attribute.getTaskId(), attribute);
 		});
-		
+
 	}
 
 	@SuppressWarnings("unchecked")
@@ -352,7 +360,8 @@ public class VariablesQuery {
 		whereClause += applyTaskAttributes(attributesCriterias);
 
 		String sql = "";
-		sql += SQLConstants.SELECT_PROCESSID_TASKID_OWNERID_TASKNAME_VAR + variableColumns + SQLConstants.FROM_TASKVARLOG;
+		sql += SQLConstants.SELECT_PROCESSID_TASKID_OWNERID_TASKNAME_VAR + variableColumns
+				+ SQLConstants.FROM_TASKVARLOG;
 		whereClause = removeLastOccurence(whereClause, SQLConstants.AND);
 		sql += SQLConstants.WHERE + " " + whereClause;
 
