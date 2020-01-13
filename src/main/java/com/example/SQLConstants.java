@@ -2,7 +2,7 @@ package com.example;
 
 public class SQLConstants {
 
-	public static final String SELECT_PROCESSID_TASKID_OWNERID_VAR = "SELECT taskid,processinstanceid,ACTUALOWNER_ID FROM ( SELECT T.taskId,t.processinstanceid, task.ACTUALOWNER_ID ";
+	public static final String SELECT_PROCESSID_TASKID_OWNERID_TASKNAME_VAR = "SELECT taskid,processinstanceid,ACTUALOWNER_ID,TASKNAME FROM ( SELECT T.taskId,t.processinstanceid, task.ACTUALOWNER_ID, task.name taskname ";
 
 	public static final String SELECT_PROCESSID_TASKID_CORRELATIONKEY_VAR = "SELECT taskid,processinstanceid,correlationKeyName FROM ( SELECT T.taskId,t.processinstanceid,ck.NAME correlationKeyName ";
 	public static final String FROM_PROCESSVARLOG = " FROM VARIABLEINSTANCELOG V "
@@ -17,7 +17,7 @@ public class SQLConstants {
 			+ " INNER JOIN AUDITTASKIMPL  T ON T.PROCESSINSTANCEID = V.PROCESSINSTANCEID	 "
 			+ " JOIN PROCESSINSTANCEINFO pi ON pi.instanceid = t.PROCESSINSTANCEID "
 			+ " JOIN Task task ON task.ID = v.TASKID"
-			+ " WHERE V2.ID IS NULL GROUP BY T.TASKID,t.processinstanceid,task.ACTUALOWNER_ID ) resultAlias ";
+			+ " WHERE V2.ID IS NULL GROUP BY T.TASKID,t.processinstanceid,task.ACTUALOWNER_ID, task.name ) resultAlias ";
 
 	public static final String PROCESS_VAR_MAX = ", MAX ( CASE V.VARIABLEINSTANCEID WHEN '%s' THEN V.VALUE END )  VAR_%s";
 	public static final String TASK_VAR_MAX = ", MAX ( CASE V.name WHEN '%s' THEN V.VALUE END )  VAR_%s";

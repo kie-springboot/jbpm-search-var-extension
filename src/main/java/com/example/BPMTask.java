@@ -10,6 +10,8 @@ public class BPMTask implements Serializable {
 	private static final long serialVersionUID = 2820588057425543709L;
 	private Long taskId;
 	private Long processInstanceId;
+	private String owner;
+	private String name;
 	private Map<String, Object> taskVariables;
 	private Map<String, Object> processVariables;
 
@@ -64,6 +66,22 @@ public class BPMTask implements Serializable {
 			processVariables.put(v.getName(), v.getValue());
 
 		});
+	}
+
+	public String getOwner() {
+		return owner;
+	}
+
+	public void setOwner(String owner) {
+		this.owner = owner;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 }

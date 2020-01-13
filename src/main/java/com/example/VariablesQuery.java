@@ -41,7 +41,9 @@ public class VariablesQuery {
 	private Map<String, Object> searchProcessVars = new HashMap<String, Object>();
 	private Map<Long, List<Variable>> taskVariables = new HashMap<Long, List<Variable>>();
 	private Map<Long, List<Variable>> processVariables = new HashMap<Long, List<Variable>>();
-	private Map<Attribute, Object> attributes = new HashMap<Attribute, Object>();
+	private Map<Attribute, Object> attributesCriterias = new HashMap<Attribute, Object>();
+	private Map<Long, TaskAttributes> taskAttributes = new HashMap<Long, TaskAttributes>();
+
 
 	public VariablesQuery(EntityManagerFactory emf) {
 		this.emf = emf;
@@ -84,9 +86,9 @@ public class VariablesQuery {
 				logger.info("process var name {}, task var value {}", k, searchProcessVars.get(k));
 			});
 
-			attributes = filterByAttribute(payload);
-			attributes.keySet().forEach(t -> {
-				logger.info("attribute  name {}, attribute value {}", t, attributes.get(t));
+			attributesCriterias = filterByAttribute(payload);
+			attributesCriterias.keySet().forEach(t -> {
+				logger.info("attribute  name {}, attribute value {}", t, attributesCriterias.get(t));
 			});
 
 			List<IDWrapper> tasksByProcessVars = filterByProcessVars(searchProcessVars);
@@ -141,7 +143,8 @@ public class VariablesQuery {
 		searchProcessVars.clear();
 		taskVariables.clear();
 		processVariables.clear();
-		attributes.clear();
+		attributesCriterias.clear();
+		taskAttributes.clear();
 	}
 
 	private Map<Long, List<Variable>> fetchProcessVariables(Set<IDWrapper> intersect) {
@@ -218,6 +221,9 @@ public class VariablesQuery {
 		if (processVariables.containsKey(id.getProcessinstanceid())) {
 			task.addProcessVariables(processVariables.get(id.getProcessinstanceid()));
 		}
+		task.setOwner(taskAttributes.get(id.getTaskid()).getOwner());
+		task.setName(taskAttributes.get(id.getTaskid()).getName());
+		
 
 		return task;
 	}
@@ -272,12 +278,24 @@ public class VariablesQuery {
 		EntityManager em = emf.createEntityManager();
 		Query query = em.createNativeQuery(sql);
 		List<Object[]> sqlResult = query.getResultList();
+		extractTaskAttributes(sqlResult);
 		List<IDWrapper> pojoResult = transform(sqlResult);
 
 		em.close();
 
 		return pojoResult;
 
+	}
+
+	private void extractTaskAttributes(List<Object[]> sqlResult) {
+		// TODO Auto-generated method stub
+		
+		sqlResult.forEach(sql -> {
+			
+			TaskAttributes attribute = new TaskAttributes(sql);
+			taskAttributes.put(attribute.getTaskId(), attribute);
+		});
+		
 	}
 
 	@SuppressWarnings("unchecked")
@@ -307,7 +325,7 @@ public class VariablesQuery {
 					+ "'" + processVars.get(var).toString() + "' " + SQLConstants.AND;
 		}
 
-		whereClause += applyProcessAttributes(attributes);
+		whereClause += applyProcessAttributes(attributesCriterias);
 
 		String sql = "";
 		sql += SQLConstants.SELECT_PROCESSID_TASKID_CORRELATIONKEY_VAR + variableColumns
@@ -331,17 +349,17 @@ public class VariablesQuery {
 					+ taskVars.get(var).toString() + "' " + SQLConstants.AND;
 		}
 
-		whereClause += applyTaskAttributes(attributes);
+		whereClause += applyTaskAttributes(attributesCriterias);
 
 		String sql = "";
-		sql += SQLConstants.SELECT_PROCESSID_TASKID_OWNERID_VAR + variableColumns + SQLConstants.FROM_TASKVARLOG;
+		sql += SQLConstants.SELECT_PROCESSID_TASKID_OWNERID_TASKNAME_VAR + variableColumns + SQLConstants.FROM_TASKVARLOG;
 		whereClause = removeLastOccurence(whereClause, SQLConstants.AND);
 		sql += SQLConstants.WHERE + " " + whereClause;
 
 		return sql;
 	}
 
-	private String applyTaskAttributes(Map<Attribute, Object> attributes2) {
+	private String applyTaskAttributes(Map<Attribute, Object> attributes) {
 		AtomicReference<String> sql = new AtomicReference<String>();
 		//@formatter:off
 

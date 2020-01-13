@@ -10,6 +10,7 @@ public class Variable implements Serializable {
 	private String value;
 	private String type;
 	private Long parentId;
+	private Boolean isAttribute;
 
 	public Variable() {
 	}
@@ -59,6 +60,14 @@ public class Variable implements Serializable {
 	@Override
 	public String toString() {
 		return "Variable [name=" + name + ", value=" + value + ", type=" + type + ", parentId=" + parentId + "]";
+	}
+
+	public Boolean getIsAttribute() {
+		return isAttribute;
+	}
+
+	public void setIsAttribute(Boolean isAttribute) {
+		this.isAttribute = isAttribute;
 	}
 
 }
