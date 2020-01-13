@@ -5,6 +5,7 @@ import static org.kie.server.remote.rest.common.util.RestUtils.getContentType;
 import static org.kie.server.remote.rest.common.util.RestUtils.getVariant;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,6 +27,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
 
+import org.jbpm.services.api.RuntimeDataService;
+import org.kie.api.task.model.TaskSummary;
+import org.kie.internal.query.QueryFilter;
 import org.kie.server.api.marshalling.Marshaller;
 import org.kie.server.api.marshalling.MarshallerFactory;
 import org.kie.server.api.marshalling.MarshallingFormat;
@@ -45,12 +49,16 @@ public class VariablesQuery {
 	private Map<Long, List<Variable>> processVariables = new HashMap<Long, List<Variable>>();
 	private Map<Attribute, Object> attributesCriterias = new HashMap<Attribute, Object>();
 	private Map<Long, TaskAttributes> taskAttributes = new HashMap<Long, TaskAttributes>();
+	private static final String EMPTY_RESULT = "[ ]";
+	private Boolean HAVE_RESULTS = true;
+	private static Boolean HAVE_TASK_VAR = false;
+	private static Boolean HAVE_PROCESS_VAR = false;
+	private static Boolean HAVE_POTENTIAL_OWNER = false;
 
 	private Marshaller marshaller;
 
 	public VariablesQuery(EntityManagerFactory emf) {
 		this.emf = emf;
-
 		Set<Class<?>> classes = new HashSet<Class<?>>();
 		classes.add(BPMTask.class);
 		this.marshaller = MarshallerFactory.getMarshaller(classes, MarshallingFormat.JSON,
@@ -83,46 +91,97 @@ public class VariablesQuery {
 			logger.info("appendProcessVars {}", payload.getAppendProcessVars());
 
 			searchTaskVars = filterByPrefix(payload, SQLConstants.TASK_VAR_PREFIX);
+			if (!searchTaskVars.isEmpty()) {
+				HAVE_TASK_VAR = true;
+			}
 
 			searchTaskVars.keySet().forEach(k -> {
 				logger.info("task var name {}, task var value {}", k, searchTaskVars.get(k));
 			});
 
 			searchProcessVars = filterByPrefix(payload, SQLConstants.PROCESS_VAR_PREFIX);
+			if (!searchProcessVars.isEmpty()) {
+				HAVE_PROCESS_VAR = true;
+			}
 
 			searchProcessVars.keySet().forEach(k -> {
 				logger.info("process var name {}, task var value {}", k, searchProcessVars.get(k));
 			});
 
 			attributesCriterias = filterByAttribute(payload);
+			checkAttributes(attributesCriterias);
+
 			attributesCriterias.keySet().forEach(t -> {
 				logger.info("attribute  name {}, attribute value {}", t, attributesCriterias.get(t));
 			});
 
-			List<IDWrapper> tasksByProcessVars = filterByProcessVars(searchProcessVars);
-			tasksByProcessVars.forEach(p -> logger.info("filtered by pVar {} ", p));
-			List<IDWrapper> tasksByTasksVar = filterByTasksVars(searchTaskVars);
-			tasksByProcessVars.forEach(t -> logger.info("filtered by tVar {} ", t));
+			List<IDWrapper> tasksByPotentialOwner = new ArrayList<IDWrapper>();
+			List<IDWrapper> tasksByProcessVars = new ArrayList<IDWrapper>();
+			List<IDWrapper> tasksByTasksVar = new ArrayList<IDWrapper>();
 
-			Set<IDWrapper> intersect = intersect(tasksByProcessVars, tasksByTasksVar);
+			tasksByPotentialOwner = filterByPotentialOwner(attributesCriterias);
+			tasksByPotentialOwner.forEach(p -> logger.info("filtered by pot owner {} ", p));
 
-			intersect.forEach(t -> logger.info("intersect {} ", t));
+			if (attributesCriterias.containsKey(Attribute.POTENTIAL_OWNER) && tasksByPotentialOwner.isEmpty()) {
 
-			taskVariables = fetchTaskVariables(intersect);
-
-			if (payload.getAppendProcessVars() != null && payload.getAppendProcessVars()) {
-
-				processVariables = fetchProcessVariables(intersect);
-				processVariables.keySet().forEach(pid -> {
-
-					logger.info("pVars for pid {} : {}", pid, processVariables.get(pid));
-				});
+				HAVE_RESULTS = false;
+				logger.info("tasksByPotentialOwner empty");
 			}
 
-			List<BPMTask> result = generateResult(intersect);
-			String marshall = this.marshaller.marshall(result);
+			if (HAVE_RESULTS && HAVE_PROCESS_VAR) {
 
-			return createResponse(marshall, v, Response.Status.OK);
+				tasksByProcessVars = filterByProcessVars(searchProcessVars);
+				if (tasksByProcessVars.isEmpty()) {
+					HAVE_RESULTS = false;
+					logger.info("tasksByProcessVars empty");
+				}
+			}
+			tasksByProcessVars.forEach(p -> logger.info("filtered by pVar {} ", p));
+
+			if (HAVE_RESULTS && HAVE_TASK_VAR) {
+				tasksByTasksVar = filterByTasksVars(searchTaskVars);
+				if (tasksByTasksVar.isEmpty()) {
+					logger.info("tasksByTasksVar empty");
+					HAVE_RESULTS = false;
+				}
+			}
+			tasksByTasksVar.forEach(t -> logger.info("filtered by tVar {} ", t));
+
+			logger.info("HAVE_RESULTS ? {} ", HAVE_RESULTS);
+
+			if (HAVE_RESULTS) {
+
+				List<Set<IDWrapper>> tmpResult = new ArrayList<>();
+				if (HAVE_PROCESS_VAR)
+					tmpResult.add(new HashSet<>(tasksByProcessVars));
+				if (HAVE_TASK_VAR)
+					tmpResult.add(new HashSet<>(tasksByTasksVar));
+				if (HAVE_POTENTIAL_OWNER)
+					tmpResult.add(new HashSet<>(tasksByPotentialOwner));
+
+				Set<IDWrapper> intersect = intersect(tmpResult);
+
+				intersect.forEach(t -> logger.info("intersect {} ", t));
+
+				taskVariables = fetchTaskVariables(intersect);
+
+				if (payload.getAppendProcessVars() != null && payload.getAppendProcessVars()) {
+
+					processVariables = fetchProcessVariables(intersect);
+					processVariables.keySet().forEach(pid -> {
+
+						logger.info("pVars for pid {} : {}", pid, processVariables.get(pid));
+					});
+				}
+
+				List<BPMTask> result = generateResult(intersect);
+				String marshall = this.marshaller.marshall(result);
+
+				return createResponse(marshall, v, Response.Status.OK);
+			} else {
+				return createResponse(EMPTY_RESULT, v, Response.Status.OK);
+
+			}
 		} catch (Exception e) {
 			// in case marshalling failed return the call container response to
 			// keep backward compatibility
@@ -133,9 +192,94 @@ public class VariablesQuery {
 		}
 	}
 
-	private Set<IDWrapper> intersect(List<IDWrapper> list, List<IDWrapper> otherlist) {
-		return list.stream().distinct().filter(otherlist::contains).collect(Collectors.toSet());
+	private Set<IDWrapper> intersect(List<Set<IDWrapper>> tmpResult) {
+		Set<IDWrapper> src = tmpResult.get(0);
+		Set<IDWrapper> result = new HashSet<IDWrapper>();
+		for (int i = 1; i < tmpResult.size(); i++) {
+			src.retainAll(tmpResult.get(i));
+		}
+		for (IDWrapper address : src) {
+			result.add(address);
+		}
+		return result;
 	}
+
+	private void checkAttributes(Map<Attribute, Object> attributesCriterias) {
+		// TODO Auto-generated method stub
+
+		attributesCriterias.keySet().forEach(a -> {
+
+			switch (a) {
+
+			case ACTUAL_OWNER:
+			case TASK_NAME: {
+				HAVE_TASK_VAR = true;
+
+				break;
+			}
+
+			case PROCESS_ID:
+			case PROCESS_INSTANCE_ID:
+			case BUSINESS_KEY:
+
+			{
+				HAVE_PROCESS_VAR = true;
+				break;
+			}
+
+			default:
+				break;
+			}
+
+		});
+
+	}
+
+	private List<IDWrapper> filterByPotentialOwner(Map<Attribute, Object> attributesCriterias) {
+
+		if (attributesCriterias.containsKey(Attribute.POTENTIAL_OWNER)) {
+			HAVE_POTENTIAL_OWNER = true;
+
+			String sql = buildGetTasksByPotentialOwnerSQL(
+					attributesCriterias.get(Attribute.POTENTIAL_OWNER).toString());
+			logger.info("filterByPotentialOwner sql {}", sql);
+			EntityManager em = emf.createEntityManager();
+			Query query = em.createNativeQuery(sql);
+			List<Object[]> sqlResult = query.getResultList();
+			List<IDWrapper> pojoResult = transform(sqlResult);
+			em.close();
+			return pojoResult;
+
+		}
+		return new ArrayList<IDWrapper>();
+	}
+
+	private String buildGetTasksByPotentialOwnerSQL(String groups) {
+		String sql = "";
+
+		sql += SQLConstants.SELECT_TASKS_BY_POTENTIAL_OWNERS_START;
+		List<String> listGroups = new ArrayList<>(Arrays.asList(groups.split(",")));
+		String strGroups = "";
+		for (String group : listGroups) {
+
+			strGroups += SQLConstants.SINGLE_QUOTE;
+			strGroups += group;
+			strGroups += SQLConstants.SINGLE_QUOTE;
+			strGroups += SQLConstants.COMMA;
+
+		}
+
+		strGroups = removeLastOccurence(strGroups, SQLConstants.COMMA);
+
+		sql += strGroups;
+		sql += SQLConstants.SELECT_TASKS_BY_POTENTIAL_OWNERS_END;
+		return sql;
+	}
+
+//	private Set<IDWrapper> intersect(List<IDWrapper> list, List<IDWrapper> otherlist,
+//			List<IDWrapper> tasksByPotentialOwner) {
+//		return list.stream().distinct().filter(otherlist::contains).collect(Collectors.toSet());
+//	}
 
 	private Map<Attribute, Object> filterByAttribute(SearchPayload payload) {
 
@@ -154,6 +298,10 @@ public class VariablesQuery {
 		processVariables.clear();
 		attributesCriterias.clear();
 		taskAttributes.clear();
+		HAVE_RESULTS = true;
+		HAVE_TASK_VAR = false;
+		HAVE_PROCESS_VAR = false;
+		HAVE_POTENTIAL_OWNER = false;
 	}
 
 	private Map<Long, List<Variable>> fetchProcessVariables(Set<IDWrapper> intersect) {
@@ -185,6 +333,7 @@ public class VariablesQuery {
 		EntityManager em = emf.createEntityManager();
 		Query query = em.createNativeQuery(sql);
 		List<Object[]> sqlResult = query.getResultList();
+		extractTaskAttributes(sqlResult);
 		List<Variable> pojoResult = transformToVariable(sqlResult, SQLConstants.TASK_TYPE);
 		em.close();
 
@@ -230,8 +379,10 @@ public class VariablesQuery {
 		if (processVariables.containsKey(id.getProcessinstanceid())) {
 			task.addProcessVariables(processVariables.get(id.getProcessinstanceid()));
 		}
-		task.setOwner(taskAttributes.get(id.getTaskid()).getOwner());
+		task.setActualOwner(taskAttributes.get(id.getTaskid()).getActualOwner());
 		task.setName(taskAttributes.get(id.getTaskid()).getName());
+		task.setProcessId(taskAttributes.get(id.getTaskid()).getProcessId());
+		task.setCorrelationKeyName(taskAttributes.get(id.getTaskid()).getCorrelationKeyName());
 
 		return task;
 	}
@@ -286,7 +437,6 @@ public class VariablesQuery {
 		EntityManager em = emf.createEntityManager();
 		Query query = em.createNativeQuery(sql);
 		List<Object[]> sqlResult = query.getResultList();
-		extractTaskAttributes(sqlResult);
 		List<IDWrapper> pojoResult = transform(sqlResult);
 
 		em.close();
@@ -296,7 +446,6 @@ public class VariablesQuery {
 	}
 
 	private void extractTaskAttributes(List<Object[]> sqlResult) {
-		// TODO Auto-generated method stub
 
 		sqlResult.forEach(sql -> {
 
@@ -336,8 +485,7 @@ public class VariablesQuery {
 		whereClause += applyProcessAttributes(attributesCriterias);
 
 		String sql = "";
-		sql += SQLConstants.SELECT_PROCESSID_TASKID_CORRELATIONKEY_VAR + variableColumns
-				+ SQLConstants.FROM_PROCESSVARLOG;
+		sql += SQLConstants.SELECT_PROCESS + variableColumns + SQLConstants.FROM_PROCESSVARLOG;
 
 		whereClause = removeLastOccurence(whereClause, SQLConstants.AND);
 
@@ -360,8 +508,7 @@ public class VariablesQuery {
 		whereClause += applyTaskAttributes(attributesCriterias);
 
 		String sql = "";
-		sql += SQLConstants.SELECT_PROCESSID_TASKID_OWNERID_TASKNAME_VAR + variableColumns
-				+ SQLConstants.FROM_TASKVARLOG;
+		sql += SQLConstants.SELECT_TASK + variableColumns + SQLConstants.FROM_TASKVARLOG;
 		whereClause = removeLastOccurence(whereClause, SQLConstants.AND);
 		sql += SQLConstants.WHERE + " " + whereClause;
 
@@ -376,13 +523,13 @@ public class VariablesQuery {
 
 			switch (a) {
 
-			case ASSIGNEE: {
+			case ACTUAL_OWNER: {
 
 				String local = sql.get() != null ? sql.get() : "";
 				String tmp = SQLConstants.ACTUALOWNER_ID
 						+ SQLConstants.EQUAL_TO
 						+ SQLConstants.SINGLE_QUOTE
-						+ attributes.get(Attribute.ASSIGNEE)
+						+ attributes.get(Attribute.ACTUAL_OWNER)
 						+ SQLConstants.SINGLE_QUOTE
 						+ SQLConstants.AND;
 				sql.set(local + "\n" + tmp);
@@ -431,6 +578,19 @@ public class VariablesQuery {
 				sql.set(local + "\n" + tmp);
 				break;
 				
+			}
+			
+			case PROCESS_ID: {
+				String local = sql.get() != null ? sql.get() : "";
+				String tmp = SQLConstants.PROCESS_ID 
+						+ SQLConstants.EQUAL_TO
+						+ SQLConstants.SINGLE_QUOTE
+						+ attributes.get(Attribute.PROCESS_ID)
+						+ SQLConstants.SINGLE_QUOTE
+						+ SQLConstants.AND;
+				sql.set(local + "\n" + tmp);				
+				
+				break;
 			}
 			
 			default: break;

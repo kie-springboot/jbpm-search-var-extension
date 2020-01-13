@@ -10,8 +10,10 @@ public class BPMTask implements Serializable {
 	private static final long serialVersionUID = 2820588057425543709L;
 	private Long taskId;
 	private Long processInstanceId;
-	private String owner;
+	private String actualOwner;
 	private String name;
+	private String processId;
+	private String correlationKeyName;
 	private Map<String, Object> taskVariables;
 	private Map<String, Object> processVariables;
 
@@ -68,12 +70,12 @@ public class BPMTask implements Serializable {
 		});
 	}
 
-	public String getOwner() {
-		return owner;
+	public String getActualOwner() {
+		return actualOwner;
 	}
 
-	public void setOwner(String owner) {
-		this.owner = owner;
+	public void setActualOwner(String owner) {
+		this.actualOwner = owner;
 	}
 
 	public String getName() {
@@ -82,6 +84,22 @@ public class BPMTask implements Serializable {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public String getProcessId() {
+		return processId;
+	}
+
+	public void setProcessId(String processId) {
+		this.processId = processId;
+	}
+
+	public String getCorrelationKeyName() {
+		return correlationKeyName;
+	}
+
+	public void setCorrelationKeyName(String correlationKeyName) {
+		this.correlationKeyName = correlationKeyName;
 	}
 
 }

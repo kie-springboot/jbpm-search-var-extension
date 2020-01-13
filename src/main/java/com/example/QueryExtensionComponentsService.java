@@ -8,6 +8,7 @@ import java.util.List;
 import javax.persistence.EntityManagerFactory;
 
 import org.jbpm.runtime.manager.impl.jpa.EntityManagerFactoryManager;
+import org.jbpm.services.api.RuntimeDataService;
 import org.jbpm.services.api.query.QueryService;
 import org.kie.server.services.api.KieServerApplicationComponentsService;
 import org.kie.server.services.api.KieServerRegistry;
@@ -33,11 +34,15 @@ public class QueryExtensionComponentsService implements KieServerApplicationComp
 
 		KieServerRegistry kieServerRegistry = null;
 		QueryService queryService = null;
+		RuntimeDataService runtimeDataService = null;
 
 //		for (Object object : services) {
-//			if (QueryService.class.isAssignableFrom(object.getClass())) {
-//				queryService = (QueryService) object;
+//			if (RuntimeDataService.class.isAssignableFrom(object.getClass())) {
+//				runtimeDataService = (RuntimeDataService) object;
 //				continue;
+//			}
+//
+//		}
 //			} else if (KieServerRegistry.class.isAssignableFrom(object.getClass())) {
 //				kieServerRegistry = (KieServerRegistry) object;
 //				continue;
