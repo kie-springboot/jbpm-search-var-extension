@@ -23,22 +23,32 @@
 		<dependency>
 			<groupId>org.kie</groupId>
 			<artifactId>kie-api</artifactId>
+			<scope>provided</scope>
+
 		</dependency>
 		<dependency>
 			<groupId>org.kie.server</groupId>
 			<artifactId>kie-server-services-common</artifactId>
+			<scope>provided</scope>
+
 		</dependency>
 		<dependency>
 			<groupId>org.kie.server</groupId>
 			<artifactId>kie-server-rest-common</artifactId>
+			<scope>provided</scope>
+
 		</dependency>
 		<dependency>
 			<groupId>org.kie.server</groupId>
 			<artifactId>kie-server-services-jbpm</artifactId>
+			<scope>provided</scope>
+
 		</dependency>
 		<dependency>
 			<groupId>org.jbpm</groupId>
 			<artifactId>jbpm-kie-services</artifactId>
+			<scope>provided</scope>
+
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -50,6 +60,7 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-simple</artifactId>
 			<version>1.7.25.redhat-00001</version>
+			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 

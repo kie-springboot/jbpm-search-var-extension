@@ -169,6 +169,7 @@ public class VariablesQuery {
 	@SuppressWarnings("unchecked")
 	private List<Variable> executeTaskVariablesSQL(Set<Long> tids) {
 		String sql = buildGetTaskVarsQuery(tids);
+		logger.info("executeTaskVariablesSQL sql {}", sql);
 		EntityManager em = emf.createEntityManager();
 		Query query = em.createNativeQuery(sql);
 		List<Object[]> sqlResult = query.getResultList();
@@ -224,7 +225,7 @@ public class VariablesQuery {
 	@SuppressWarnings("unchecked")
 	private List<Variable> executeProcessVariablesSQL(Set<Long> pids) {
 		String sql = buildGetProcessVarsQuery(pids);
-		logger.info("final sql \n {}", sql);
+		logger.info("executeProcessVariablesSQL sql \n {}", sql);
 		EntityManager em = emf.createEntityManager();
 		Query query = em.createNativeQuery(sql);
 		List<Object[]> sqlResult = query.getResultList();
@@ -266,7 +267,7 @@ public class VariablesQuery {
 	private List<IDWrapper> filterByTasksVars(Map<String, Object> taskVars) {
 
 		String sql = buildSearchByTaskVarQuery(taskVars);
-		logger.info("final sql \n {}", sql);
+		logger.info("filterByTasksVars sql \n {}", sql);
 
 		EntityManager em = emf.createEntityManager();
 		Query query = em.createNativeQuery(sql);
@@ -283,7 +284,7 @@ public class VariablesQuery {
 	private List<IDWrapper> filterByProcessVars(Map<String, Object> processVars) {
 
 		String sql = buildSearchByProcessVarQuery(processVars);
-		logger.info("final sql \n {}", sql);
+		logger.info("filterByProcessVars sql \n {}", sql);
 
 		EntityManager em = emf.createEntityManager();
 		Query query = em.createNativeQuery(sql);
@@ -305,12 +306,13 @@ public class VariablesQuery {
 			whereClause += SQLConstants.VAR_PREFIX + var.substring(SQLConstants.PROCESS_VAR_PREFIX.length()) + " = "
 					+ "'" + processVars.get(var).toString() + "' " + SQLConstants.AND;
 		}
-		
+
 		whereClause += applyProcessAttributes(attributes);
 
 		String sql = "";
 		sql += SQLConstants.SELECT_PROCESSID_TASKID_CORRELATIONKEY_VAR + variableColumns
 				+ SQLConstants.FROM_PROCESSVARLOG;
+
 		whereClause = removeLastOccurence(whereClause, SQLConstants.AND);
 
 		sql += SQLConstants.WHERE + " " + whereClause;
@@ -329,13 +331,46 @@ public class VariablesQuery {
 					+ taskVars.get(var).toString() + "' " + SQLConstants.AND;
 		}
 
+		whereClause += applyTaskAttributes(attributes);
 
 		String sql = "";
-		sql += SQLConstants.SELECT_PROCESSID_TASKID_VAR + variableColumns + SQLConstants.FROM_TASKVARLOG;
+		sql += SQLConstants.SELECT_PROCESSID_TASKID_OWNERID_VAR + variableColumns + SQLConstants.FROM_TASKVARLOG;
 		whereClause = removeLastOccurence(whereClause, SQLConstants.AND);
 		sql += SQLConstants.WHERE + " " + whereClause;
 
 		return sql;
+	}
+
+	private String applyTaskAttributes(Map<Attribute, Object> attributes2) {
+		AtomicReference<String> sql = new AtomicReference<String>();
+		//@formatter:off
+
+		attributes.keySet().forEach(a -> {
+
+			switch (a) {
+
+			case ASSIGNEE: {
+
+				String local = sql.get() != null ? sql.get() : "";
+				String tmp = SQLConstants.ACTUALOWNER_ID
+						+ SQLConstants.EQUAL_TO
+						+ SQLConstants.SINGLE_QUOTE
+						+ attributes.get(Attribute.ASSIGNEE)
+						+ SQLConstants.SINGLE_QUOTE
+						+ SQLConstants.AND;
+				sql.set(local + "\n" + tmp);
+
+				break;
+			}
+
+			default:
+				break;
+			}
+		});
+		
+		//@formatter:on
+
+		return sql.get();
 	}
 
 	private String applyProcessAttributes(Map<Attribute, Object> attributes) {
@@ -384,10 +419,13 @@ public class VariablesQuery {
 	}
 
 	private String removeLastOccurence(String source, String toRemove) {
-		StringBuilder builder = new StringBuilder();
-		int start = source.lastIndexOf(toRemove);
-		builder.append(source.substring(0, start));
-		return builder.toString();
+		if (!source.isEmpty() && source.contains(toRemove)) {
+			StringBuilder builder = new StringBuilder();
+			int start = source.lastIndexOf(toRemove);
+			builder.append(source.substring(0, start));
+			return builder.toString();
+		} else
+			return source;
 
 	}
 
