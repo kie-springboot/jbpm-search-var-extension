@@ -357,7 +357,12 @@ public class VariablesQueryService {
 	}
 
 	public Boolean getHaveResults() {
-		return haveResults;
+
+		if (!haveResults
+				|| (tasksByPotentialOwner.isEmpty() && tasksByProcessVars.isEmpty() && tasksByTasksVar.isEmpty())) {
+			return false;
+		}
+		return true;
 	}
 
 	public void setHaveResults(Boolean haveResults) {
@@ -466,7 +471,7 @@ public class VariablesQueryService {
 
 	public void fetchProcessVariables(Set<IDWrapper> intersect) {
 		if (request.getAppendVar() != null && request.getAppendVar()) {
-			
+
 			Set<Long> pids = new HashSet<Long>();
 			intersect.forEach(id -> pids.add(id.getProcessinstanceid()));
 
@@ -475,16 +480,15 @@ public class VariablesQueryService {
 				variables = executeProcessVariablesSQL(pids);
 			}
 			this.processVariables = variables.stream().collect(Collectors.groupingBy(Variable::getParentId));
-			
+
 			if (printVerbose) {
-				
-			// TODO
-				
-				
+
+				// TODO
+
 			}
 		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private List<Variable> executeProcessVariablesSQL(Set<Long> pids) {
 		String sql = buildGetProcessVarsQuery(pids);
@@ -498,7 +502,7 @@ public class VariablesQueryService {
 		return pojoResult;
 
 	}
-	
+
 	private String buildGetProcessVarsQuery(Set<Long> pids) {
 		String sql = "";
 		sql += SQLConstants.SELECT_PROCESS_VARS;
@@ -534,7 +538,7 @@ public class VariablesQueryService {
 
 		return result;
 	}
-	
+
 	private BPMTask generateBPMTask(IDWrapper id) {
 		BPMTask task = new BPMTask();
 		task.setProcessInstanceId(id.getProcessinstanceid());

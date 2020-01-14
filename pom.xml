@@ -36,8 +36,15 @@
 			<groupId>org.kie.server</groupId>
 			<artifactId>kie-server-rest-common</artifactId>
 			<scope>provided</scope>
-
 		</dependency>
+		
+		
+		  <dependency>
+            <groupId>org.kie.server</groupId>
+            <artifactId>kie-server-client</artifactId>
+            <scope>provided</scope>
+        </dependency>
+		
 		<dependency>
 			<groupId>org.kie.server</groupId>
 			<artifactId>kie-server-services-jbpm</artifactId>

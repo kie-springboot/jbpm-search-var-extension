@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang3.EnumUtils;
 import org.kie.server.api.marshalling.Marshaller;
 import org.kie.server.api.marshalling.MarshallerFactory;
 import org.kie.server.api.marshalling.MarshallingFormat;
@@ -17,6 +18,14 @@ public class TestUtil {
 
 	public static void main(String[] args) throws JsonParseException, JsonMappingException, IOException {
 		// TODO Auto-generated method stub
+		
+		 boolean result = EnumUtils.isValidEnum(Attribute.class, "TASK_NAME");
+		 System.out.println(result);
+		 boolean result2 = EnumUtils.isValidEnum(Attribute.class, "TASK_NAME_SHIT");
+		 System.out.println(result2);
+		 
+		 System.exit(-1);
+
 		
 		String group = "group1,group2";
 		

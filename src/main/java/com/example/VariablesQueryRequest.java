@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.EnumUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,8 +132,7 @@ public class VariablesQueryRequest {
 
 	public void filterAttributes() {
 		Map<Attribute, Object> result = payload.getSearchCriteria().keySet().stream()
-				.filter(k -> !k.toLowerCase().startsWith(SQLConstants.TASK_VAR_PREFIX)
-						&& !k.toLowerCase().startsWith(SQLConstants.PROCESS_VAR_PREFIX))
+				.filter(k -> EnumUtils.isValidEnum(Attribute.class,k))
 				.collect(Collectors.toMap(k -> Attribute.valueOf(k.toUpperCase()),
 						k -> payload.getSearchCriteria().get(k)));
 		checkAttributes(result);

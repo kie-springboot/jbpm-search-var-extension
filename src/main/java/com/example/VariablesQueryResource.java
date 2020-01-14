@@ -66,7 +66,7 @@ public class VariablesQueryResource {
 
 			searchRequest.printSearchCriteria();
 			searchRequest.filterTaskVariables(SQLConstants.TASK_VAR_PREFIX);
-			searchRequest.filterProcessVariables(SQLConstants.TASK_VAR_PREFIX);
+			searchRequest.filterProcessVariables(SQLConstants.PROCESS_VAR_PREFIX);
 			searchRequest.filterAttributes();
 			searchService.setRequest(searchRequest);
 
