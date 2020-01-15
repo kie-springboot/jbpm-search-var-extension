@@ -446,7 +446,7 @@ public class QueryTest {
 	}
 
 	@Test
-	@Ignore
+	//@Ignore
 	public void testQueryTasksByTaskOwner() throws IOException {
 
 		ProcessServicesClient processClient = kieServicesClient.getServicesClient(ProcessServicesClient.class);
@@ -475,23 +475,19 @@ public class QueryTest {
 
 		int total = processClient.findProcessInstances(containerId, 0, 0).size();
 		assertThat(total, is(PROCESS_AMOUNT * VARIATIONS));
-		
-		
-//		for (int i = 0; i < VARIATIONS; i++) {
-//			Map<String, Object> tmp = queryUtils.createPayload(i);
-//			Map<String, Object> criteria = new HashMap<String, Object>();
-//			criteria.put("t_" + QueryTestUtil.KEY_ASSIGNEE, tmp.get(QueryTestUtil.KEY_ASSIGNEE));
-//			criteria.put(Attribute.PROCESS_ID.name(), tmp.get(Attribute.PROCESS_ID.name()));
-//			List<Task> tasks = searchClient.queryTasks(criteria, true);
-//			assertThat(tasks.size(), is(PROCESS_AMOUNT));
-//			tasks.forEach(t -> {
-//
-//				assertThat(t.getTaskVariables().get(QueryTestUtil.KEY_REVIEWER),
-//						is(criteria.get("t_" + QueryTestUtil.KEY_REVIEWER)));
-//				assertThat(t.getProcessId(), is(criteria.get(Attribute.PROCESS_ID.name())));
-//			});
-//
-//		}
+
+		for (int i = 0; i < VARIATIONS; i++) {
+			Map<String, Object> tmp = queryUtils.createPayload(i);
+			Map<String, Object> criteria = new HashMap<String, Object>();
+			criteria.put(Attribute.ACTUAL_OWNER.name(), tmp.get(QueryTestUtil.KEY_ASSIGNEE));
+			List<Task> tasks = searchClient.queryTasks(criteria, true);
+			assertThat(tasks.size(), is(PROCESS_AMOUNT));
+			tasks.forEach(t -> {
+
+				assertThat(t.getActualOwner(),is(criteria.get(Attribute.ACTUAL_OWNER.name())));
+			});
+
+		}
 
 	}
 
