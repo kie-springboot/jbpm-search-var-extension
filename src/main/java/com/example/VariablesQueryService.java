@@ -527,9 +527,9 @@ public class VariablesQueryService {
 		this.processVariables = processVariables;
 	}
 
-	public List<BPMTask> generateResult(Set<IDWrapper> intersect) {
+	public List<Task> generateResult(Set<IDWrapper> intersect) {
 
-		List<BPMTask> result = new ArrayList<BPMTask>();
+		List<Task> result = new ArrayList<Task>();
 
 		intersect.forEach(id -> {
 
@@ -539,8 +539,8 @@ public class VariablesQueryService {
 		return result;
 	}
 
-	private BPMTask generateBPMTask(IDWrapper id) {
-		BPMTask task = new BPMTask();
+	private Task generateBPMTask(IDWrapper id) {
+		Task task = new Task();
 		task.setProcessInstanceId(id.getProcessinstanceid());
 		task.setTaskId(id.getTaskid());
 
@@ -554,8 +554,53 @@ public class VariablesQueryService {
 		task.setName(taskAttributes.get(id.getTaskid()).getName());
 		task.setProcessId(taskAttributes.get(id.getTaskid()).getProcessId());
 		task.setCorrelationKeyName(taskAttributes.get(id.getTaskid()).getCorrelationKeyName());
+		task.setGroups(taskAttributes.get(id.getTaskid()).getGroups());
 
 		return task;
+	}
+
+	public void fetchTaskGroups(Set<IDWrapper> intersect) {
+		Set<Long> tids = new HashSet<Long>();
+		intersect.forEach(id -> tids.add(id.getTaskid()));
+		if (!tids.isEmpty()) {
+			executeTaskGroupsSQL(tids);
+		}
+
+	}
+
+	private void executeTaskGroupsSQL(Set<Long> tids) {
+		String sql = buildSelectTaskGroupsQuery(tids);
+		logger.info("executeTaskGroupsSQL sql \n {}", sql);
+		EntityManager em = emf.createEntityManager();
+		Query query = em.createNativeQuery(sql);
+		List<Object[]> sqlResult = query.getResultList();
+		addToTaskAttributes(sqlResult);
+		em.close();
+	}
+
+	private void addToTaskAttributes(List<Object[]> sqlResult) {
+		sqlResult.forEach(r -> {
+
+			Long taskId = Long.valueOf(r[0].toString());
+			taskAttributes.get(taskId).addGroup(r[1].toString());
+		});
+
+	}
+
+	private String buildSelectTaskGroupsQuery(Set<Long> tids) {
+		String sql = "";
+		sql += SQLConstants.SELECT_TASK_GROUPS;
+
+		String idList = "";
+		for (Long id : tids) {
+			idList += id + " , ";
+		}
+
+		idList = removeLastOccurence(idList, SQLConstants.COMMA);
+		sql += idList;
+		sql += SQLConstants.RIGHT_BRACKET;
+
+		return sql;
 	}
 
 }

@@ -39,7 +39,7 @@ public class VariablesQueryResource {
 	public VariablesQueryResource(EntityManagerFactory emf) {
 		this.emf = emf;
 		Set<Class<?>> classes = new HashSet<Class<?>>();
-		classes.add(BPMTask.class);
+		classes.add(Task.class);
 		this.marshaller = MarshallerFactory.getMarshaller(classes, MarshallingFormat.JSON,
 				VariablesQueryResource.class.getClassLoader());
 	}
@@ -78,9 +78,10 @@ public class VariablesQueryResource {
 
 				Set<IDWrapper> intersect = searchService.intersectResults();
 				searchService.fetchTaskVariables(intersect);
+				searchService.fetchTaskGroups(intersect);
 				searchService.fetchProcessVariables(intersect);
 
-				List<BPMTask> result = searchService.generateResult(intersect);
+				List<Task> result = searchService.generateResult(intersect);
 
 				String marshall = this.marshaller.marshall(result);
 

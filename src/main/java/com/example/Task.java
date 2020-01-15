@@ -4,8 +4,9 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-public class BPMTask implements Serializable {
+public class Task implements Serializable {
 
 	private static final long serialVersionUID = 2820588057425543709L;
 	private Long taskId;
@@ -16,6 +17,7 @@ public class BPMTask implements Serializable {
 	private String correlationKeyName;
 	private Map<String, Object> taskVariables;
 	private Map<String, Object> processVariables;
+	private Set<String> groups;
 
 	public Long getTaskId() {
 		return taskId;
@@ -100,6 +102,14 @@ public class BPMTask implements Serializable {
 
 	public void setCorrelationKeyName(String correlationKeyName) {
 		this.correlationKeyName = correlationKeyName;
+	}
+
+	public Set<String> getGroups() {
+		return groups;
+	}
+
+	public void setGroups(Set<String> groups) {
+		this.groups = groups;
 	}
 
 }

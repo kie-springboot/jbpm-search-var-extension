@@ -33,7 +33,7 @@ public class TestUtil {
 		System.exit(-1);
 
 		Set<Class<?>> classes = new HashSet<Class<?>>();
-		classes.add(BPMTask.class);
+		classes.add(Task.class);
 		classes.add(List.class);
 
 
@@ -43,7 +43,7 @@ public class TestUtil {
 		String source = "[{\"com.example.BPMTask\" : {\"taskId\":66,\"processInstanceId\":66,\"owner\":\"anton\",\"name\":\"SampleTask3-new\",\"taskVariables\":{\"AnotherTaskVariable\":\"value3\",\"SampleTaskVariable\":\"value4\"},\"processVariables\":{\"AnotherVariable\":\"value3\",\"initiator\":\"anton\",\"SampleProcessVariable\":\"value4\"}}},{\"com.example.BPMTask\" : {\"taskId\":65,\"processInstanceId\":65,\"owner\":\"anton\",\"name\":\"SampleTask2-new\",\"taskVariables\":{\"AnotherTaskVariable\":\"value3\",\"SampleTaskVariable\":\"value4\"},\"processVariables\":{\"AnotherVariable\":\"value3\",\"initiator\":\"anton\",\"SampleProcessVariable\":\"value4\"}}}]";
 		
 		System.out.println(source);
-		List<BPMTask> tasks = m.unmarshall(source, List.class);
+		List<Task> tasks = m.unmarshall(source, List.class);
 		
 		tasks.forEach(t -> {
 			

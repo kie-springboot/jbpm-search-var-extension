@@ -8,7 +8,7 @@ import org.kie.server.client.QueryServicesClient;
 
 public interface KieQueryServicesClient extends QueryServicesClient {
 
-	List<BPMTask> queryTasks(Map<String, Object> queryCriteria, boolean includeProcessVariables) throws IOException;
+	List<Task> queryTasks(Map<String, Object> queryCriteria, boolean includeProcessVariables) throws IOException;
 
 	void queryProcesses(Map<String, Object> queryCriteria, boolean includeProcessVariables);
 

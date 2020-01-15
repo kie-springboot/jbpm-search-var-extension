@@ -58,10 +58,17 @@ public class SQLConstants {
 			+ "	inner join ( " + "			select max(tv.id) myId from taskvariableimpl tv  "
 			+ "			where tv.taskid in ( ";
 	public static final String END_TASK_VARS = " ) " + "	group by tv.taskid,tv.name "
-			+ "	) resultAlias on t.id = resultAlias.myId "
-			+ " JOIN Task task ON t.TASKID = task.ID"
-	+ " JOIN PROCESSINSTANCEINFO pi ON pi.INSTANCEID = task.PROCESSINSTANCEID"
-	+ " LEFT JOIN CORRELATIONKEYINFO ck ON pi.INSTANCEID = ck.PROCESSINSTANCEID";
+			+ "	) resultAlias on t.id = resultAlias.myId " + " JOIN Task task ON t.TASKID = task.ID"
+			+ " JOIN PROCESSINSTANCEINFO pi ON pi.INSTANCEID = task.PROCESSINSTANCEID"
+			+ " LEFT JOIN CORRELATIONKEYINFO ck ON pi.INSTANCEID = ck.PROCESSINSTANCEID";
 
+	public static final String SELECT_TASK_GROUPS = " SELECT distinct" + " taskimpl0_.id AS taskid, "
+			+ " organizati2_.ID groupId" + " FROM" + "	Task taskimpl0_"
+			+ " INNER JOIN PeopleAssignments_PotOwners potentialo1_ ON" + "	taskimpl0_.id = potentialo1_.task_id"
+			+ " INNER JOIN OrganizationalEntity organizati2_ ON" + "	potentialo1_.entity_id = organizati2_.id"
+			+ " WHERE" + "	taskimpl0_.archived = 0" + "	AND (taskimpl0_.status IN ('Created' ," + "	'Ready' ,"
+			+ "	'Reserved' ," + "	'InProgress' ," + "	'Suspended'))" + "	AND organizati2_.DTYPE = 'Group'"
+			+ "	AND taskimpl0_.id IN (";
+	public static final String RIGHT_BRACKET = ")";
 
 }

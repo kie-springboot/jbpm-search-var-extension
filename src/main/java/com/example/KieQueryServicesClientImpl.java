@@ -29,7 +29,7 @@ public class KieQueryServicesClientImpl extends QueryServicesClientImpl implemen
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public List<BPMTask> queryTasks(Map<String, Object> queryCriteria, boolean includeProcessVariables)
+	public List<Task> queryTasks(Map<String, Object> queryCriteria, boolean includeProcessVariables)
 			throws IOException {
 
 		// Obtain KIE Api Endpoint details
@@ -42,7 +42,7 @@ public class KieQueryServicesClientImpl extends QueryServicesClientImpl implemen
 		payload.setAppendProcessVars(includeProcessVariables);
 
 		// Perform Request
-		List<BPMTask> tasks = this.makeHttpPostRequestAndCreateCustomResponse(endpoint, payload, List.class);
+		List<Task> tasks = this.makeHttpPostRequestAndCreateCustomResponse(endpoint, payload, List.class);
 		LOGGER.info("KIE Query Extension Request for url: {} returned {} task instances", QUERY_TASKS_URI,
 				tasks.size());
 

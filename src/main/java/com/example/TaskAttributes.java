@@ -1,5 +1,8 @@
 package com.example;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class TaskAttributes {
 
 	private String name;
@@ -7,6 +10,7 @@ public class TaskAttributes {
 	private Long taskId;
 	private String processId;
 	private String correlationKeyName;
+	private Set<String> groups;
 
 	public TaskAttributes(Object[] sql) {
 		this.taskId = Long.valueOf(sql[0].toString());
@@ -14,6 +18,11 @@ public class TaskAttributes {
 		this.name = sql[6].toString();
 		this.processId = sql[4].toString();
 		this.correlationKeyName = sql[5] == null ? null : sql[5].toString();
+		groups = new HashSet<String>();
+	}
+
+	public void addGroup(String group) {
+		groups.add(group);
 	}
 
 	public String getName() {
@@ -96,6 +105,10 @@ public class TaskAttributes {
 
 	public void setCorrelationKeyName(String correlationKeyName) {
 		this.correlationKeyName = correlationKeyName;
+	}
+
+	public Set<String> getGroups() {
+		return groups;
 	}
 
 }
