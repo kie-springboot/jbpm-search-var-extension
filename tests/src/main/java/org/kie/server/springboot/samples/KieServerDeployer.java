@@ -39,12 +39,14 @@ public class KieServerDeployer {
 				});
 
 				kjars.forEach(k -> {
+					KieContainerResource resource = new KieContainerResource(k.getContainerId(), k.getReleaseId());
+					resource.setResolvedReleaseId(k.getReleaseId());
+					resource.setContainerAlias(k.getAlias());
 
-					if (!isDeployed(k, result)) {
+					if (!isDeployed(resource, result)) {
 						logger.info("deploying {} using custom deployer", k);
-						KieContainerResource resource = new KieContainerResource(k.getContainerId(), k.getReleaseId());
-						resource.setResolvedReleaseId(k.getReleaseId());
-						resource.setContainerAlias(k.getAlias());
+
+						resource.setResolvedReleaseId(null);
 						kieServerClient.createContainer(k.getContainerId(), resource);
 					} else {
 
@@ -56,11 +58,7 @@ public class KieServerDeployer {
 		};
 	}
 
-	protected boolean isDeployed(KJAR k, List<KieContainerResource> result) {
-
-		KieContainerResource resource = new KieContainerResource(k.getContainerId(), k.getReleaseId());
-		resource.setResolvedReleaseId(k.getReleaseId());
-		resource.setContainerAlias(k.getAlias());
+	private boolean isDeployed(KieContainerResource resource, List<KieContainerResource> result) {
 
 		return (result.contains(resource)) ? true : false;
 	}
