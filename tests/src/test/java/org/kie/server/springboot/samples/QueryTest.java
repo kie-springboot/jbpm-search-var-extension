@@ -31,11 +31,13 @@ import org.kie.server.api.marshalling.MarshallingFormat;
 import org.kie.server.api.model.KieContainerResource;
 import org.kie.server.api.model.KieServerMode;
 import org.kie.server.api.model.ReleaseId;
+import org.kie.server.api.model.instance.ProcessInstance;
 import org.kie.server.api.model.instance.TaskSummary;
 import org.kie.server.client.KieServicesClient;
 import org.kie.server.client.KieServicesConfiguration;
 import org.kie.server.client.KieServicesFactory;
 import org.kie.server.client.ProcessServicesClient;
+import org.kie.server.client.QueryServicesClient;
 import org.kie.server.client.UserTaskServicesClient;
 import org.kie.server.services.api.KieServer;
 import org.kie.server.springboot.jbpm.ContainerAliasResolver;
@@ -154,7 +156,11 @@ public class QueryTest {
 
 	@Test
 	public void testQueryTasksByExistingTaskVariable() throws InterruptedException, IOException {
+
 		ProcessServicesClient processClient = kieServicesClient.getServicesClient(ProcessServicesClient.class);
+		QueryServicesClient queryClient = kieServicesClient.getServicesClient(QueryServicesClient.class);
+		List<ProcessInstance> pi = queryClient.findProcessInstancesByStatus(Arrays.asList(1), 0, 0);
+
 		KieQueryServicesClient searchClient = kieServicesClient.getServicesClient(KieQueryServicesClient.class);
 		List<Long> pids = new ArrayList<Long>();
 
@@ -446,7 +452,7 @@ public class QueryTest {
 	}
 
 	@Test
-	//@Ignore
+	@Ignore
 	public void testQueryTasksByTaskOwner() throws IOException {
 
 		ProcessServicesClient processClient = kieServicesClient.getServicesClient(ProcessServicesClient.class);
@@ -484,7 +490,7 @@ public class QueryTest {
 			assertThat(tasks.size(), is(PROCESS_AMOUNT));
 			tasks.forEach(t -> {
 
-				assertThat(t.getActualOwner(),is(criteria.get(Attribute.ACTUAL_OWNER.name())));
+				assertThat(t.getActualOwner(), is(criteria.get(Attribute.ACTUAL_OWNER.name())));
 			});
 
 		}
