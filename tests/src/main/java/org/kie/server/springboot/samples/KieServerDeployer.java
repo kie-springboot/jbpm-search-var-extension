@@ -3,7 +3,9 @@ package org.kie.server.springboot.samples;
 import java.util.List;
 
 import org.kie.server.api.model.KieContainerResource;
+import org.kie.server.api.model.KieContainerResourceFilter;
 import org.kie.server.client.KieServicesClient;
+import org.kie.server.services.api.KieServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,9 @@ public class KieServerDeployer {
 	@Qualifier("kieServerClient")
 	KieServicesClient kieServerClient;
 
+	@Autowired
+	KieServer kieServer;
+
 	private List<KJAR> kjars;
 
 	@Bean
@@ -34,7 +39,11 @@ public class KieServerDeployer {
 			@Override
 			public void run(String... strings) throws Exception {
 
-				List<KieContainerResource> result = kieServerClient.listContainers().getResult().getContainers();
+				List<KieContainerResource> result = kieServer.listContainers(KieContainerResourceFilter.ACCEPT_ALL)
+						.getResult().getContainers();
+
+				logger.info("{} containers deployed", result.size());
+
 				result.forEach(r -> {
 
 					logger.info("already deployed {}", r);
@@ -49,7 +58,7 @@ public class KieServerDeployer {
 						logger.info("deploying {} using custom deployer", k);
 
 						resource.setResolvedReleaseId(null);
-						kieServerClient.createContainer(k.getContainerId(), resource);
+						kieServer.createContainer(k.getContainerId(), resource);
 					} else {
 
 						logger.info("skipping deployment of {} because it's already deployed", k);
