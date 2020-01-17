@@ -12,9 +12,11 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Configuration
 @ConfigurationProperties(prefix = "deployment")
+@Profile("!test")
 public class KieServerDeployer {
 
 	private static final Logger logger = LoggerFactory.getLogger(KieServerDeployer.class);

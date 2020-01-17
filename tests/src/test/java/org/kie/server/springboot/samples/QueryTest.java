@@ -48,6 +48,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -58,6 +59,8 @@ import com.example.Task;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = { KieServerApplication.class }, webEnvironment = WebEnvironment.RANDOM_PORT)
 @TestPropertySource(locations = "classpath:application-test.properties")
+@ActiveProfiles("test")
+
 public class QueryTest {
 
 	static final String ARTIFACT_ID = "Sample";
