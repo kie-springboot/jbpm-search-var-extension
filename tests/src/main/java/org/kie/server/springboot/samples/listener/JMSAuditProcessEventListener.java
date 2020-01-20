@@ -1,5 +1,6 @@
 package org.kie.server.springboot.samples.listener;
 
+import org.jbpm.workflow.instance.impl.WorkflowProcessInstanceImpl;
 import org.kie.api.event.process.DefaultProcessEventListener;
 import org.kie.api.event.process.ProcessNodeLeftEvent;
 import org.slf4j.Logger;
@@ -15,21 +16,25 @@ public class JMSAuditProcessEventListener extends DefaultProcessEventListener {
 	@Autowired
 	private JmsTemplate jmsTemplate;
 
+	private String varPayload;
+
 	@Override
 	public void afterNodeLeft(ProcessNodeLeftEvent event) {
+		varPayload = "";
 
-		logger.info("listener triggered");
-		if (jmsTemplate != null) {
-			logger.info("Sending jms message");
-			jmsTemplate.setDefaultDestinationName("bpmqueue");
-		
-			jmsTemplate.convertAndSend("id:" + event.getProcessInstance().getProcessId() + " ,instance:"
-					+ event.getProcessInstance().getId());
-		} else {
+		logger.info("Sending jms message");
+		jmsTemplate.setDefaultDestinationName("bpmqueue");
 
-			logger.info("Injection failed");
-		}
+		WorkflowProcessInstanceImpl wpi = (WorkflowProcessInstanceImpl) event.getProcessInstance();
+		wpi.getVariables().keySet().forEach(k -> {
 
+			String tmp = k + "=" + wpi.getVariables().get(k) + ",";
+
+			varPayload += tmp;
+		});
+
+		jmsTemplate.convertAndSend("id:" + event.getProcessInstance().getProcessId() + " ,instance:"
+				+ event.getProcessInstance().getId() + ", variables:\n" + varPayload);
 	}
 
 }

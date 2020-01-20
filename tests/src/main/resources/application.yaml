@@ -4,7 +4,10 @@ amqphub:
     remote-url: amqp://127.0.0.1:5672
 cxf:
   path: /rest
-
+#  jaxrs:
+#    classes-scan: true
+#    classes-scan-packages: io.swagger.models
+  
 jbpm:
   executor:
     enabled: false
@@ -83,6 +86,6 @@ deployment:
   kjars:
     - groupId: com.myspace
       artifactId: Sample
-      version: 1.0.3-SNAPSHOT
+      version: 1.0.4-SNAPSHOT
       containerId: business-application-kjar-1_0-SNAPSHOT
       alias: cpo-business-application-kjar

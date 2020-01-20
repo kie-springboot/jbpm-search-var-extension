@@ -59,6 +59,7 @@ public class VariablesQueryResource {
 	@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
 	@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
 	public Response queryProcesses(@Context HttpHeaders headers, SearchPayload payload) {
+		
 		throw new UnsupportedOperationException("Not implemented yet!");
 
 	}
