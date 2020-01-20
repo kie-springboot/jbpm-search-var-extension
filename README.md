@@ -10,7 +10,7 @@ Installation
 The project needs to be built via `mvn clean install` command and then added on the kie-server classpath. Either by installing the `*.jar` file in WEB-INF/lib folder or in case of embedding kie-server via spring boot, simply add it as a maven dependency.
 
 
-How to configure it
+Configuration
 ------------------------------
 The only required configuration is to make sure that the extension project bundles file named `org.kie.server.services.api.KieServerApplicationComponentsService` in `src/main/resources/META-INF/services` with content:
 
