@@ -45,10 +45,29 @@ public class VariablesQueryResource {
 	}
 
 	@POST
+	@Path("/cases")
+	@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+	@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+	public Response queryCases(@Context HttpHeaders headers, SearchPayload payload) {
+
+		throw new UnsupportedOperationException("Not implemented yet!");
+
+	}
+
+	@POST
+	@Path("/processes")
+	@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+	@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+	public Response queryProcesses(@Context HttpHeaders headers, SearchPayload payload) {
+		throw new UnsupportedOperationException("Not implemented yet!");
+
+	}
+
+	@POST
 	@Path("/tasks")
 	@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
 	@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-	public Response tasksVariables(@Context HttpHeaders headers, SearchPayload payload) {
+	public Response queryTasks(@Context HttpHeaders headers, SearchPayload payload) {
 
 		searchRequest = new VariablesQueryRequest(payload, PRINT_VERBOSE);
 		searchService = new VariablesQueryService(emf, PRINT_VERBOSE);
