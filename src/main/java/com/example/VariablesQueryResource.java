@@ -25,7 +25,7 @@ import org.kie.server.api.marshalling.MarshallingFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Path("server/queries/variables")
+@Path("server/queries/search")
 public class VariablesQueryResource {
 
 	private static final Logger logger = LoggerFactory.getLogger(VariablesQueryResource.class);
@@ -45,7 +45,7 @@ public class VariablesQueryResource {
 	}
 
 	@POST
-	@Path("/")
+	@Path("/tasks")
 	@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
 	@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
 	public Response tasksVariables(@Context HttpHeaders headers, SearchPayload payload) {
