@@ -30,6 +30,7 @@ kieserver:
     enabled: true
   swagger:
     enabled: true
+  auditQueueName: bpmqueue  
 
 narayana:
   dbcp:
