@@ -25,6 +25,13 @@ public class VariablesQueryRequest {
 	private SearchPayload payload;
 	private static final Logger logger = LoggerFactory.getLogger(VariablesQueryRequest.class);
 	private Boolean printVerbose;
+	
+	public void processSearchCriteria()  {
+		printSearchCriteria();
+		filterTaskVariables(SQLConstants.TASK_VAR_PREFIX);
+		filterProcessVariables(SQLConstants.PROCESS_VAR_PREFIX);
+		filterAttributes();
+	}
 
 	public VariablesQueryRequest(SearchPayload payload, Boolean printVerbose) {
 

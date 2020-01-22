@@ -6,10 +6,14 @@ public class IDWrapper {
 
 		this.taskid = Long.parseLong(sql[0].toString());
 		this.processinstanceid = Long.parseLong(sql[1].toString());
+		this.correlationKeyName = sql[2] == null ? null :  sql[2].toString();
+		this.processId = sql[3].toString();
 	}
 
 	private Long taskid;
 	private Long processinstanceid;
+	private String correlationKeyName;
+	private String processId;
 
 	public Long getTaskid() {
 		return taskid;
@@ -61,6 +65,22 @@ public class IDWrapper {
 		} else if (!taskid.equals(other.taskid))
 			return false;
 		return true;
+	}
+
+	public String getCorrelationKeyName() {
+		return correlationKeyName;
+	}
+
+	public void setCorrelationKeyName(String correlationKeyName) {
+		this.correlationKeyName = correlationKeyName;
+	}
+
+	public String getProcessId() {
+		return processId;
+	}
+
+	public void setProcessId(String processId) {
+		this.processId = processId;
 	}
 
 }

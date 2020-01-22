@@ -3,17 +3,20 @@ package com.example;
 public class SQLConstants {
 
 	public static final String SELECT_TASKS_BY_POTENTIAL_OWNERS_START = " SELECT "
-			+ " DISTINCT taskimpl0_.id AS taskid, " + " taskimpl0_.processInstanceId AS processinstanceid " + " FROM "
+			+ " DISTINCT taskimpl0_.id AS taskid, " + " taskimpl0_.processInstanceId AS processinstanceid,cki.NAME correlationKeyName, pi.PROCESSID " + " FROM "
 			+ " Task taskimpl0_ " + " INNER JOIN PeopleAssignments_PotOwners potentialo1_ ON "
 			+ " 	taskimpl0_.id = potentialo1_.task_id " + " INNER JOIN OrganizationalEntity organizati2_ ON "
-			+ "	potentialo1_.entity_id = organizati2_.id" + " WHERE" + "	taskimpl0_.archived = 0"
+			+ "	potentialo1_.entity_id = organizati2_.id"
+			+ " JOIN PROCESSINSTANCEINFO pi ON pi.INSTANCEID = taskimpl0_.PROCESSINSTANCEID"
+			+ " LEFT JOIN CORRELATIONKEYINFO cki ON pi.INSTANCEID = cki.PROCESSINSTANCEID"
+			+ " WHERE" + "	taskimpl0_.archived = 0"
 			+ "	AND (taskimpl0_.status IN ('Created' ," + "	'Ready' ," + "	'Reserved' ," + "	'InProgress' ,"
 			+ "	'Suspended'))" + "	AND (organizati2_.id = null" + "	OR organizati2_.id IN (";
 	public static final String SELECT_TASKS_BY_POTENTIAL_OWNERS_END = "	))" + " AND (null NOT IN ( " + " SELECT "
 			+ " excludedow3_.entity_id" + " FROM" + " 	PeopleAssignments_ExclOwners excludedow3_" + " WHERE"
 			+ " taskimpl0_.id = excludedow3_.task_id))" + " ORDER BY" + " taskimpl0_.id DESC";
 
-	public static final String SELECT_TASK = "SELECT taskid,processinstanceid,ACTUALOWNER_ID,TASKNAME FROM ( SELECT T.taskId,t.processinstanceid, task.ACTUALOWNER_ID, task.name taskname ";
+	public static final String SELECT_TASK = "SELECT taskid,processinstanceid,correlationKeyName,PROCESSID,ACTUALOWNER_ID,TASKNAME FROM ( SELECT T.taskId,t.processinstanceid, task.ACTUALOWNER_ID,cki.NAME correlationKeyName, pi.PROCESSID, task.name taskname ";
 
 	public static final String SELECT_PROCESS = "SELECT taskid,processinstanceid,correlationKeyName,PROCESSID FROM ( SELECT T.taskId,t.processinstanceid,ck.NAME correlationKeyName, pi.PROCESSID ";
 	public static final String FROM_PROCESSVARLOG = " FROM VARIABLEINSTANCELOG V "
@@ -27,8 +30,9 @@ public class SQLConstants {
 			+ " LEFT JOIN TASKVARIABLEIMPL  V2 ON ( V.NAME = V2.NAME AND V.TASKID=V2.TASKID AND V.ID < V2.ID )	"
 			+ " INNER JOIN AUDITTASKIMPL  T ON T.PROCESSINSTANCEID = V.PROCESSINSTANCEID	 "
 			+ " JOIN PROCESSINSTANCEINFO pi ON pi.instanceid = t.PROCESSINSTANCEID "
+			+ "  LEFT JOIN CORRELATIONKEYINFO cki ON pi.INSTANCEID = cki.PROCESSINSTANCEID"
 			+ " JOIN Task task ON task.ID = v.TASKID"
-			+ " WHERE V2.ID IS NULL GROUP BY T.TASKID,t.processinstanceid,task.ACTUALOWNER_ID, task.name ) resultAlias ";
+			+ " WHERE V2.ID IS NULL GROUP BY T.TASKID,t.processinstanceid,task.ACTUALOWNER_ID, task.name,pi.PROCESSID, cki.NAME ) resultAlias ";
 
 	public static final String PROCESS_VAR_MAX = ", MAX ( CASE V.VARIABLEINSTANCEID WHEN '%s' THEN V.VALUE END )  VAR_%s";
 	public static final String TASK_VAR_MAX = ", MAX ( CASE V.name WHEN '%s' THEN V.VALUE END )  VAR_%s";

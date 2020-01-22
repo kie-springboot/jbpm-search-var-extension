@@ -28,6 +28,7 @@ public class VariablesQueryService {
 	private List<IDWrapper> tasksByTasksVar;
 	private Map<Long, List<Variable>> taskVariables;
 	private Map<Long, TaskAttributes> taskAttributes;
+	private Map<Long, ProcessAttributes> processAttributes;
 	private Map<Long, List<Variable>> processVariables;
 
 	private Boolean printVerbose;
@@ -51,6 +52,7 @@ public class VariablesQueryService {
 		this.taskVariables = new HashMap<Long, List<Variable>>();
 		this.taskAttributes = new HashMap<Long, TaskAttributes>();
 		this.processVariables = new HashMap<Long, List<Variable>>();
+		this.processAttributes = new HashMap<Long, ProcessAttributes>();
 
 	}
 
@@ -83,6 +85,13 @@ public class VariablesQueryService {
 
 	public void setEmf(EntityManagerFactory emf) {
 		this.emf = emf;
+	}
+
+	public void filter() {
+
+		filterByPotentialOwner();
+		filterByProcessVars();
+		filterByTasksVars();
 	}
 
 	public void filterByPotentialOwner() {
@@ -527,7 +536,7 @@ public class VariablesQueryService {
 		this.processVariables = processVariables;
 	}
 
-	public List<Task> generateResult(Set<IDWrapper> intersect) {
+	public List<Task> generateTaskResult(Set<IDWrapper> intersect) {
 
 		List<Task> result = new ArrayList<Task>();
 
@@ -601,6 +610,44 @@ public class VariablesQueryService {
 		sql += SQLConstants.RIGHT_BRACKET;
 
 		return sql;
+	}
+
+	public List<Task> taskResult() {
+		Set<IDWrapper> intersect = intersectResults();
+		fetchTaskVariables(intersect);
+		fetchTaskGroups(intersect);
+		fetchProcessVariables(intersect);
+
+		return generateTaskResult(intersect);
+	}
+
+	public List<Process> bpmProcessResult() {
+		Set<IDWrapper> intersect = intersectResults();
+		fetchProcessVariables(intersect);
+		return generateProcessResult(intersect);
+
+	}
+
+	private List<Process> generateProcessResult(Set<IDWrapper> intersect) {
+		List<Process> result = new ArrayList<Process>();
+
+		intersect.forEach(id -> {
+
+			result.add(generateBPMProcess(id));
+		});
+
+		return result;
+	}
+
+	private Process generateBPMProcess(IDWrapper id) {
+		Process p = new Process();
+		p.setInstanceId(id.getProcessinstanceid());
+		if (processVariables.containsKey(id.getProcessinstanceid())) {
+			p.addProcessVariables(processVariables.get(id.getProcessinstanceid()));
+		}
+		p.setCorrelationKeyName(id.getCorrelationKeyName());
+		p.setId(id.getProcessId());
+		return p;
 	}
 
 }

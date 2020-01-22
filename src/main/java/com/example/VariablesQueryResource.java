@@ -40,6 +40,7 @@ public class VariablesQueryResource {
 		this.emf = emf;
 		Set<Class<?>> classes = new HashSet<Class<?>>();
 		classes.add(Task.class);
+		classes.add(Process.class);
 		this.marshaller = MarshallerFactory.getMarshaller(classes, MarshallingFormat.JSON,
 				VariablesQueryResource.class.getClassLoader());
 	}
@@ -59,8 +60,44 @@ public class VariablesQueryResource {
 	@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
 	@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
 	public Response queryProcesses(@Context HttpHeaders headers, SearchPayload payload) {
-		
-		throw new UnsupportedOperationException("Not implemented yet!");
+
+		searchRequest = new VariablesQueryRequest(payload, PRINT_VERBOSE);
+		searchService = new VariablesQueryService(emf, PRINT_VERBOSE);
+
+		logger.info("VariablesQueryResource.queryProcesses()");
+		Variant v = getVariant(headers);
+		String contentType = getContentType(headers);
+
+		MarshallingFormat format = MarshallingFormat.fromType(contentType);
+		if (format == null) {
+			format = MarshallingFormat.valueOf(contentType);
+		}
+
+		try {
+			
+			searchRequest.processSearchCriteria();
+			searchService.setRequest(searchRequest);
+			searchService.filter();
+			
+			if (searchService.getHaveResults()) {
+
+				List<Process> result = searchService.bpmProcessResult();
+				String marshall = this.marshaller.marshall(result);
+				return createResponse(marshall, v, Response.Status.OK);
+			} else {
+				return createResponse(EMPTY_RESULT, v, Response.Status.OK);
+
+			}
+
+		} catch (Exception e) {
+
+			// in case marshalling failed return the call container response to
+			// keep backward compatibility
+			e.printStackTrace();
+			String response = "Execution failed with error : " + e.getMessage();
+			logger.error("Returning Failure response with content '{}'", response);
+			return createResponse(response, v, Response.Status.INTERNAL_SERVER_ERROR);
+		}
 
 	}
 
@@ -73,7 +110,7 @@ public class VariablesQueryResource {
 		searchRequest = new VariablesQueryRequest(payload, PRINT_VERBOSE);
 		searchService = new VariablesQueryService(emf, PRINT_VERBOSE);
 
-		logger.info("VariablesQuery.tasksVariables()");
+		logger.info("VariablesQueryResource.queryTasks()");
 		Variant v = getVariant(headers);
 		String contentType = getContentType(headers);
 
@@ -84,27 +121,14 @@ public class VariablesQueryResource {
 
 		try {
 
-			searchRequest.printSearchCriteria();
-			searchRequest.filterTaskVariables(SQLConstants.TASK_VAR_PREFIX);
-			searchRequest.filterProcessVariables(SQLConstants.PROCESS_VAR_PREFIX);
-			searchRequest.filterAttributes();
+			searchRequest.processSearchCriteria();
 			searchService.setRequest(searchRequest);
-
-			searchService.filterByPotentialOwner();
-			searchService.filterByProcessVars();
-			searchService.filterByTasksVars();
+			searchService.filter();
 
 			if (searchService.getHaveResults()) {
 
-				Set<IDWrapper> intersect = searchService.intersectResults();
-				searchService.fetchTaskVariables(intersect);
-				searchService.fetchTaskGroups(intersect);
-				searchService.fetchProcessVariables(intersect);
-
-				List<Task> result = searchService.generateResult(intersect);
-
+				List<Task> result = searchService.taskResult();
 				String marshall = this.marshaller.marshall(result);
-
 				return createResponse(marshall, v, Response.Status.OK);
 			} else {
 				return createResponse(EMPTY_RESULT, v, Response.Status.OK);
