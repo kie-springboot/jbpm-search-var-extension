@@ -419,7 +419,7 @@ public class VariablesQueryService {
 
 	public void fetchTaskVariables(Set<IDWrapper> intersect) {
 		Set<Long> tids = new HashSet<Long>();
-		intersect.forEach(id -> tids.add(id.getProcessinstanceid()));
+		intersect.forEach(id -> tids.add(id.getTaskid()));
 		List<Variable> variables = new ArrayList<Variable>();
 		if (!tids.isEmpty()) {
 			variables = executeTaskVariablesSQL(tids);

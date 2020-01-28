@@ -19,8 +19,8 @@ public class Variable implements Serializable {
 
 		this.type = varType;
 		parentId = Long.valueOf(sql[0].toString());
-		value = sql[1].toString();
-		name = sql[2].toString();
+		value = sql[1] == null ? null : sql[1].toString() ;
+		name = sql[2] == null ? null : sql[2].toString();
 
 	}
 
