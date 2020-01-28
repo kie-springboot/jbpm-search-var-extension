@@ -127,6 +127,42 @@ The response is array of tasks with all the task variables and optionally all th
 `actualOwner` can be null if the task is not owned by anybody (i.e. it is in Ready state).
 `correlationKeyName` can be also null if the process was started without one.
 
+####  server/queries/search/processes
+
+**Example REST Request:**
+
+```
+curl --location --request POST 'http://localhost:8080/kie-server/services/rest/server/queries/search/processes' \
+--header 'Accept: application/json' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Basic YW50b246cGFzc3dvcmQxIQ==' \
+--data-raw '{
+    "searchCriteria": {
+              "p_sampleProcessVar" : "SampleValue"
+         },
+         "appendProcessVars": true
+        
+}'
+```
+
+**Example REST Response:**
+[
+  {
+    "com.example.Process": {
+      "instanceId": 126,
+      "id": "Sample.SameTaskInputOutputVariable",
+      "correlationKeyName": null,
+      "processVariables": {
+        "sampleProcessVar": "SampleValue",
+        "initiator": "anton"
+      }
+    }
+  }
+]
+
+The input search criteria as well as implementaion details are identical to task search operation.
+
+
 
 
 
