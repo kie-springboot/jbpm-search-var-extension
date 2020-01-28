@@ -146,6 +146,7 @@ curl --location --request POST 'http://localhost:8080/kie-server/services/rest/s
 ```
 
 **Example REST Response:**
+```
 [
   {
     "com.example.Process": {
@@ -159,6 +160,7 @@ curl --location --request POST 'http://localhost:8080/kie-server/services/rest/s
     }
   }
 ]
+```
 
 The input search criteria as well as implementaion details are identical to task search operation.
 
